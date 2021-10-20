@@ -1,0 +1,184 @@
+
+<!DOCTYPE html>
+<html>
+<style>
+#info {
+  position: absolute;
+  top: 20px;
+  width: 100%;
+
+  text-align: center;
+  color: #000000
+}
+
+body {
+ overflow: hidden;
+}
+</style>
+<body>
+
+
+<div id = "info"><br>
+<button id = 'toggle' style = "width: 20%">Start</button>
+<button id = 'switch' style = "width: 20%">mechanical</button>
+<button id = 'count10' style = "width: 20%">+10s</button>
+
+</div>
+
+<script src="https://threejs.org/build/three.min.js"></script>
+<script
+  src="https://code.jquery.com/jquery-3.6.0.min.js"
+  integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4="
+  crossorigin="anonymous"></script>
+<script>
+//https://jyunming-chen.github.io/game3js/gameHWhelpers/sounds/KennyG.mp3
+
+$("#switch").click(function(){
+	smooth = !smooth;
+	if(smooth)
+		$("#switch").text("mechanical");
+	else
+		$("#switch").text("quartz");
+	angle = 0;
+})
+
+$("#count10").click(function(){
+	if(count==6)
+	{
+		count=0;
+		angle=0;
+	}
+	angle += 10*6/180*Math.PI;
+	count++;
+	
+})
+
+$("#toggle").click(function() {
+	
+	turn=!turn;
+	if(turn)
+			$("#toggle").text("Stop");
+		else
+			$("#toggle").text("Turn");
+   
+})
+
+$("#toggle").mousedown(function() { 
+    time=window.setTimeout(function()
+	{$("#toggle").text("start");
+		angle=0;
+		turn=!turn;
+	},1000);
+	return false;
+})
+    
+$("#toggle").mouseup(function() {
+	
+	clearTimeout(time);
+	return false;
+	
+   
+})
+
+var camera, scene, renderer;
+var angle = 0;
+var turn = false;
+var smooth = true;
+var groups = [];
+var time=false;
+var count=0;
+
+init();
+animate();
+
+function init() {
+
+	for(var k = 0; k< 2;k++)
+		groups[k] = new THREE.Group();
+
+  renderer = new THREE.WebGLRenderer({
+    antialias: true
+  });
+
+	renderer.setSize(window.innerWidth, window.innerHeight);
+	renderer.setClearColor(0xffffff);
+	document.body.appendChild(renderer.domElement);
+	window.addEventListener('resize', onWindowResize, false);
+  
+	scene = new THREE.Scene();
+	camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 1, 10000);
+	camera.position.z = 250;
+
+	/////////////////////////////////////////////////////////
+
+	var geometry = new THREE.CircleGeometry( 100, 64 );
+	var material = new THREE.MeshBasicMaterial( { color: 0x9D9D9D } );
+	var circle = new THREE.Mesh( geometry, material );
+	scene.add( circle );
+	
+	geometry = new THREE.BoxGeometry( 5, 90, 1);
+	material = new THREE.MeshBasicMaterial( {color: 0xFFFFFF} );
+	cube = new THREE.Mesh( geometry, material );
+	
+	geometry = new THREE.CircleGeometry( 10, 1 );
+	material = new THREE.MeshBasicMaterial( { color: 0xFFFFFF} );
+	var triangle = new THREE.Mesh( geometry, material );
+	triangle.position.y=50;
+	triangle.rotation.z=1.57;
+	
+	const group = new THREE.Group();
+	groups[0].valueOf().add( triangle );
+	
+	scene.add(groups[0]);
+	
+	clock = new THREE.Clock();
+	
+	clock.getDelta();
+	setTimeout(turnSixDegs, 0);
+  
+}
+
+	function turnSixDegs(){
+		if(turn && angle > 0 && !smooth)
+			angle -= 6/180*Math.PI;
+		setTimeout(turnSixDegs,1000);
+	}
+
+function onWindowResize() {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight); 
+}
+
+function animate() {
+
+
+	var dt = clock.getDelta();
+	
+	if(turn && smooth && angle > 0)
+		angle -= 2 * Math.PI * dt /60;
+	if(angle<=0)
+	{
+		$("#toggle").text("start");
+		angle=0;
+		turn=false;
+	}
+		
+		
+	
+	groups[0].valueOf().position.set(40*Math.sin(angle),40*Math.cos(angle),0);
+	groups[0].valueOf().rotation.z = -angle;
+	
+	requestAnimationFrame(animate);
+	render();
+}
+
+function render() {
+  renderer.render(scene, camera);
+}
+
+</script>
+
+<div id="info">HW1</div>
+</body>
+</html>
