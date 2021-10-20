@@ -116,10 +116,6 @@ function init() {
 	var circle = new THREE.Mesh( geometry, material );
 	scene.add( circle );
 	
-	geometry = new THREE.BoxGeometry( 5, 90, 1);
-	material = new THREE.MeshBasicMaterial( {color: 0xFFFFFF} );
-	cube = new THREE.Mesh( geometry, material );
-	
 	geometry = new THREE.CircleGeometry( 10, 1 );
 	material = new THREE.MeshBasicMaterial( { color: 0xFFFFFF} );
 	var triangle = new THREE.Mesh( geometry, material );
