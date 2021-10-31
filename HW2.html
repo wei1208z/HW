@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+#info {
+  position: absolute;
+  top: 0px;
+  width: 100%;
+  padding: 10px;
+  text-align: center;
+  color: #ffff00
+}
+
+body {
+  overflow: hidden;
+}
+
+</style>
+</head>
+
+<body>
+
+<div id="info">HW2
+</div>
+<script src="https://threejs.org/build/three.min.js"></script>
+<script src="https://threejs.org/examples/js/controls/OrbitControls.js"></script>
+<script src="https://jyunming-chen.github.io/tutsplus/js/KeyboardState.js"></script>
+
+
+
+<script>
+var camera, scene, renderer;
+var keyboard = new KeyboardState();
+var clock;
+var train,car;
+var trainbody,carbody,mid;
+var Pillar1,Pillar2,Pillar3;
+var pos = new THREE.Vector3();
+var vel = new THREE.Vector3();
+var force = new THREE.Vector3();
+var power, angle;
+var IsFCollision=false,IsBCollision=false;
+
+(function() {
+  Math.clamp = function(val,min,max){
+    return Math.min(Math.max(val,min),max);
+    
+  }})();
+  
+init();
+animate();
+
+function buildTrain() {
+	var car = new THREE.Object3D();
+	var material1 = new THREE.MeshPhongMaterial({color: 0x2C16D6});
+	var material2 = new THREE.MeshPhongMaterial({color: 0x2EF06A});
+	var material3 = new THREE.MeshPhongMaterial({side: THREE.DoubleSide,color: 0xC080E8});
+  
+	trainbody = new THREE.Mesh(new THREE.BoxGeometry( 6, 1, 3), material3);
+	trainbody.position.set(3.5,1.5,0);
+	
+	head = new THREE.Mesh(new THREE.CylinderGeometry( 1.25, 1.25, 6,32 ), material2);
+	head.rotation.z=Math.PI/2;
+	head.position.set(3.5,2.25,0);
+	
+	chimney = new THREE.Mesh(new THREE.CylinderGeometry( 1, 0.5, 1,32 ), material2);
+	chimney.position.set(5,3.5,0);
+	
+	connect = new THREE.Mesh(new THREE.CylinderGeometry( 0.1, 0.1, 0.5,32 ), material1);
+	connect.position.set(0,1.5,0);
+	
+	connect1 = new THREE.Mesh(new THREE.BoxGeometry( 1, 0.25, 1 ), material1);
+	connect1.position.set(0,1.5,0);
+	
+	tire1 = new THREE.Mesh(new THREE.CylinderGeometry( 0.5, 0.5, 0.5,32 ), material1);
+	tire1.rotation.x=Math.PI/2;
+	tire1.position.set(5.5,0.5,1);
+	
+	tire2 = new THREE.Mesh(new THREE.CylinderGeometry( 0.5, 0.5, 0.5,32 ), material1);
+	tire2.rotation.x=Math.PI/2;
+	tire2.position.set(5.5,0.5,-1);
+	
+	tire3 = new THREE.Mesh(new THREE.CylinderGeometry( 0.5, 0.5, 0.5,32 ), material1);
+	tire3.rotation.x=Math.PI/2;
+	tire3.position.set(1.5,0.5,1);
+	
+	tire4 = new THREE.Mesh(new THREE.CylinderGeometry( 0.5, 0.5, 0.5,32 ), material1);
+	tire4.rotation.x=Math.PI/2;
+	tire4.position.set(1.5,0.5,-1);
+	
+	car.add(trainbody,head,chimney,connect,connect1,tire1,tire2,tire3,tire4);
+  return car;
+}
+
+function buildmid()
+{
+	mid = new THREE.Mesh(new THREE.CylinderGeometry( 0.1, 0.1, 0.5,32 ), new THREE.MeshPhongMaterial());
+	mid.position.set(0,1.5,0);
+	return mid;
+}
+	
+function buildCar() {
+	var car = new THREE.Object3D();
+	var material1 = new THREE.MeshPhongMaterial({color: 0x2C16D6});
+	var material2 = new THREE.MeshPhongMaterial({color: 0x2EF06A});
+  
+	carbody = new THREE.Mesh(new THREE.BoxGeometry( 6, 1, 3), material2);
+	carbody.position.set(-3.5,1.5,0);
+	
+	
+	tire1 = new THREE.Mesh(new THREE.CylinderGeometry( 0.5, 0.5, 0.5,32 ), material1);
+	tire1.rotation.x=Math.PI/2;
+	tire1.position.set(-5.5,0.5,1);
+	
+	tire2 = new THREE.Mesh(new THREE.CylinderGeometry( 0.5, 0.5, 0.5,32 ), material1);
+	tire2.rotation.x=Math.PI/2;
+	tire2.position.set(-5.5,0.5,-1);
+	
+	tire3 = new THREE.Mesh(new THREE.CylinderGeometry( 0.5, 0.5, 0.5,32 ), material1);
+	tire3.rotation.x=Math.PI/2;
+	tire3.position.set(-1.5,0.5,1);
+	
+	tire4 = new THREE.Mesh(new THREE.CylinderGeometry( 0.5, 0.5, 0.5,32 ), material1);
+	tire4.rotation.x=Math.PI/2;
+	tire4.position.set(-1.5,0.5,-1);
+	
+	car.add(carbody,tire1,tire2,tire3,tire4);
+	return car;
+}
+
+function init() {
+
+  clock = new THREE.Clock();
+  scene = new THREE.Scene();
+
+  camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 1, 1000);
+  camera.position.set (0, 250, 250);
+  scene.add(camera);
+  
+  camera_third = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 1, 1000);
+  camera_third.position.set (-10, 10, 0);
+  scene.add(camera_third);
+  
+  
+	const light = new THREE.PointLight( 0xffffff, 1 );
+	light.position.set( 20, 20,10 );
+	scene.add( light );
+  
+const material = new THREE.MeshPhongMaterial( {color: 0x3DFFFF} );
+
+obstacle1 = new THREE.Mesh( new THREE.CylinderGeometry( 5, 5, 10, 32 ), material );
+obstacle1.position.set( 32, 5,20 );
+  
+obstacle2 = new THREE.Mesh( new THREE.CylinderGeometry( 3, 3, 10, 32 ), material );
+obstacle2.position.set( -50, 5,30 ); 
+  
+obstacle3 = new THREE.Mesh( new THREE.CylinderGeometry( 1, 1, 10, 32 ), material );
+obstacle3.position.set( -30, 5,-50 );
+
+obstacle4 = new THREE.Mesh( new THREE.CylinderGeometry( 7, 7, 10, 32 ), material );
+obstacle4.position.set( 17, 5,-20 );
+
+scene.add( obstacle1,obstacle2,obstacle3,obstacle4 );    
+  
+  
+  
+  
+
+  var gridXZ = new THREE.GridHelper(200, 20, 'red', 'white');
+  scene.add(gridXZ);
+
+  renderer = new THREE.WebGLRenderer();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.setClearColor(0x888888);
+
+  var controls = new THREE.OrbitControls(camera, renderer.domElement);
+  
+  // disable OrbitControl keys
+  controls.enableKeys = false;
+  
+  document.body.appendChild(renderer.domElement);
+  ////////////////////////////////////////////////////////////////////////
+  power = 0;
+  angle = 0.0;
+  
+  train = buildTrain();
+  car = buildCar();
+  mid = buildmid();
+  
+  scene.add(train,car,mid);
+
+
+
+  renderer.autoClear = false;
+}
+
+
+function update(dt) {
+
+  
+  keyboard.update();
+  
+  if (vel.length() > 0) {
+    angle = 1.5*Math.PI + Math.atan2(vel.x, vel.z); 
+  }
+
+  if (keyboard.pressed("space"))  
+		if(power>1||power<-1) 
+			power *= 0.001;
+			
+			
+	if(!IsFCollision)
+	{
+		if (keyboard.pressed("up")) 
+		{
+			if(power==0)
+				power=5;
+			if(power>0)
+				power *= 1.05;
+			else
+				power+=1;
+		}
+	}
+    
+	if(!IsBCollision)
+	{
+		if (keyboard.pressed("down"))
+		{
+			if(power==0)
+				power=-5;
+			if(power>0)
+				power -=0.7;
+			else
+				power*=1.05;
+		}
+	}
+  
+  
+  power = Math.clamp (power, -40, 80.0); 
+  
+  
+  var angle_thrust = angle;
+  if (keyboard.pressed("left"))
+		angle_thrust += power/200;
+  if (keyboard.pressed("right"))
+		angle_thrust -= power/200;
+    
+  // compute force
+  var thrust = new THREE.Vector3(1,0,0).multiplyScalar(Math.abs(power)).applyAxisAngle (new THREE.Vector3(0,1,0), angle_thrust);
+  force.copy (thrust);
+  force.add(vel.clone().multiplyScalar(-2))
+   
+  // eulers
+  if(power==0)
+  {
+  vel.add(force.clone().multiplyScalar(dt));
+  pos.add(vel.clone().multiplyScalar(0).multiplyScalar(dt));
+  }
+  else if(power<0)
+  {
+  vel.add(force.clone().multiplyScalar(dt));
+  pos.add(vel.clone().multiplyScalar(-1).multiplyScalar(dt));
+  }
+  else
+  {
+  vel.add(force.clone().multiplyScalar(dt));
+  pos.add(vel.clone().multiplyScalar(dt));
+  }
+  
+}
+
+function animate() {
+  
+camera_third.position.copy(train.valueOf().localToWorld(new THREE.Vector3(-30,10,0)));
+camera_third.lookAt(train.position);
+  var dt = clock.getDelta();
+  
+  let Rect = makeRect(trainbody);
+	
+	if(Check_Intersect(Rect,obstacle1,5)&&power>0&&!IsBCollision)
+	{
+		power=0;
+		IsFCollision=true;
+	}
+	else if(Check_Intersect(Rect,obstacle1,5)&&power<0&&!IsFCollision)
+	{
+		power=0;
+		IsBCollision=true;
+	}
+	
+	
+	if(Check_Intersect(Rect,obstacle2,3)&&power>0&&!IsBCollision)
+	{
+		power=0;
+		IsFCollision=true;
+	}
+	else if(Check_Intersect(Rect,obstacle2,3)&&power<0&&!IsFCollision)
+	{
+		power=0;
+		IsBCollision=true;
+	}
+	
+	if(Check_Intersect(Rect,obstacle3,1)&&power>0&&!IsBCollision)
+	{
+		power=0;
+		IsFCollision=true;
+	}
+	else if(Check_Intersect(Rect,obstacle3,1)&&power<0&&!IsFCollision)
+	{
+		power=0;
+		IsBCollision=true;
+	}
+	
+	if(Check_Intersect(Rect,obstacle4,7)&&power>0&&!IsBCollision)
+	{
+		power=0;
+		IsFCollision=true;
+	}
+	else if(Check_Intersect(Rect,obstacle4,7)&&power<0&&!IsFCollision)
+	{
+		power=0;
+		IsBCollision=true;
+	}
+	
+	if(!Check_Intersect(Rect,obstacle1,5)&&!Check_Intersect(Rect,obstacle2,3)&&!Check_Intersect(Rect,obstacle3,1)&&!Check_Intersect(Rect,obstacle4,7))
+	{
+		IsFCollision=false;
+		IsBCollision=false;
+	}
+	
+  update(dt);
+  // car update
+  train.position.copy(pos);
+  train.rotation.y = angle;
+  
+  mid.position.copy(pos);
+  mid.rotation.y = angle;
+  
+  setTimeout(()=>
+  {
+  car.position.copy(pos);
+  car.rotation.y = angle;
+  },1);
+  
+	
+	
+  
+  
+  
+  
+  requestAnimationFrame(animate);
+  render();
+}
+
+function makeRect() {
+	let Rect = {};
+    Rect.max = mid.localToWorld ( new THREE.Vector3(6.5, 0, 1.5) );
+    Rect.min = mid.localToWorld ( new THREE.Vector3(-6.5, 0,-1.5) );
+    Rect.px = mid.localToWorld ( new THREE.Vector3(1,0,0)).sub (mid.position);
+    return Rect;
+}
+
+function Check_Intersect(Rect, C, Rad) {
+	const Rad2 = Rad * Rad;
+  
+  let xHat = Rect.px;
+  let zHat = xHat.clone().cross (new THREE.Vector3(0,1,0)).normalize();
+  
+  let R = {max:{x:0, z:0}, min:{x:0, z:0}};
+  let cp = Rect.max.clone().sub (C.position);   
+  R.max.x = cp.dot (xHat), R.max.z = cp.dot (zHat);
+  
+	cp = Rect.min.clone().sub (C.position);
+  R.min.x = cp.dot (xHat), R.min.z = cp.dot (zHat);
+  
+	if (R.max.x < 0) 			/* R to left of circle center */
+   	if (R.max.z < 0) 		/* R in lower left corner */
+     		return ((R.max.x * R.max.x + R.max.z * R.max.z) < Rad2);
+   	else if (R.min.z > 0) 	/* R in upper left corner */
+     		return ((R.max.x * R.max.x + R.min.z * R.min.z) < Rad2);
+   	else 					/* R due West of circle */
+     		return(Math.abs(R.max.x) < Rad);
+ 	else if (R.min.x > 0)  	/* R to right of circle center */
+   		if (R.max.z < 0) 	/* R in lower right corner */
+     			return ((R.min.x * R.min.x + R.max.z * R.max.z) < Rad2);
+   	else if (R.min.z > 0)  	/* R in upper right corner */
+     		return ((R.min.x * R.min.x + R.min.z * R.min.z) < Rad2);
+   	else 				/* R due East of circle */
+     		return (R.min.x < Rad);
+ 	else				/* R on circle vertical centerline */
+   		if (R.max.z < 0) 	/* R due South of circle */
+     		return (Math.abs(R.max.z) < Rad);
+   	else if (R.min.z > 0)  	/* R due North of circle */
+     		return (R.min.z < Rad);
+   	else 				/* R contains circle centerpoint */
+     		return(true);
+}
+
+
+
+function render() {
+
+  var IW = window.innerWidth;
+  var IH = window.innerHeight;
+
+  renderer.clear();
+
+	renderer.setViewport(0, 0, IW / 2, IH);
+  camera.aspect = IW / 2 / IH;
+  camera.updateProjectionMatrix();
+  renderer.render(scene, camera);
+  //renderer.render(sceneHUD, cameraHUD);
+
+  renderer.setViewport(IW / 2, 0, IW / 2, IH);
+  renderer.render(scene, camera_third);
+  
+  
+  //renderer.render(sceneHUD, cameraHUD);
+  
+
+}
+
+
+
+
+
+</script>
+</body>
+
+</html>
