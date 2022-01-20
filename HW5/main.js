@@ -76,8 +76,8 @@ function init(){
     });
 	
 	var count = 0;
-	for(var i = -90; i <= 90; i+=20){
-	  for(var j = 90; j >= -90; j-=20){
+	for(var i = 100; i <= -100; i+=20){
+	  for(var j = -100; j >= -100; j-=20){
 		var geometry = new TeapotGeometry (4);
         var mesh = new THREE.Mesh(geometry, meshMaterial);
 		mesh.position.set(j,0,i);
