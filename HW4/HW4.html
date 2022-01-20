@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html>
+<head>
+<div id="info">Candle Light Animation
+</div>
+<style>
+#info {
+	position: absolute;
+	top: 20px;
+	width: 100%;
+	text-align: center;
+	color: #ffff00;
+}
+body {
+  overflow: hidden;
+  margin:0;
+	padding:0;
+}
+</style>
+<head>
+
+<body>
+
+<script src="https://threejs.org/build/three.min.js"></script>
+<script src="https://threejs.org/examples/js/controls/OrbitControls.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+
+<script>
+
+
+var pickables=[];
+var candles=[];
+var camera, scene, renderer;
+var raycaster,mouse;
+var flameOff = false;
+class mycandle{
+   
+   x;
+   z;
+   count;
+   spotLight;
+   flameMesh;
+   
+  constructor(x,z,n){
+  this.x=x;
+  this.z=z;
+  this.candle=new THREE.Group();
+  this.candle.n=n;
+   var body = new THREE.Mesh (new THREE.CylinderGeometry(5,5,20,60), new THREE.MeshNormalMaterial());
+   this.candle.add(body);
+   body.position.y=10;
+   
+   this.spotLight = new THREE.SpotLight( 0xffffff );
+	 this.candle.add(this.spotLight);
+   this.spotLight.angle = Math.PI/4;
+   this.spotLight.position.y = 15;
+   this.spotLight.target = body;
+   this.spotLight.penumbra = 0.3;
+   
+   this.flameInterval = setInterval (this.textureAnimate.bind(this), 100);
+}
+
+
+ makeFlame2() {
+  //var flameMesh;
+  
+  var loader = new THREE.TextureLoader();
+    // load a resource
+  var texture=loader.load(
+    // URL ...
+    'https://i.imgur.com/M2tr5Tm.png?1',
+    // onLoad ...
+    function(texture) {
+      // do something with the texture
+      // Plane with default texture coordinates [0,1]x[0,1]
+       },
+		undefined, // onProgress
+    // onError ...
+    function(xhr) {
+      console.log('An error happened');
+    }
+  );
+      var texMat = new THREE.MeshBasicMaterial({
+        map: texture,
+        alphaTest:0.5
+      });
+      
+      this.flameMesh = new THREE.Mesh(new THREE.PlaneGeometry(30,30), texMat);
+      texture.wrapS = THREE.RepeatWrapping;
+      texture.wrapT = THREE.RepeatWrapping;
+    	texture.repeat.set (1/3,1/3);
+      texture.offset.set (0,2/3);
+      //scene.add (flameMesh);
+      this.candle.add (this.flameMesh);
+      pickables.push(this.candle);
+      scene.add (this.candle);
+      this.flameMesh.position.y = 28;
+      this.candle.position.set(this.x,0.1,this.z);
+   
+
+}
+
+textureAnimate() {
+  this.count = (this.count === undefined) ? 1 : this.count;
+
+//console.log (textureAnimate.count)
+	if (this.flameMesh!== undefined) {
+    var texture = this.flameMesh.material.map;
+  //console.log (`${textureAnimate.count}: [${texture.offset.x},${texture.offset.y}]`);
+    texture.offset.x += 1/3;
+ 
+ 		if (this.count % 3 === 0) {
+    	texture.offset.y -= 1/3;
+    }
+    this.count++;
+  }
+}
+
+restart(){
+  clearInterval (this.flameInterval);
+	setTimeout(this.restart2.bind(this),3000);
+}
+
+restart2(){
+    this.flameMesh.visible = true;
+	  this.spotLight.visible = true;
+    this.flameInterval = setInterval (this.textureAnimate.bind(this), 100);
+}
+
+}
+
+init();
+animate();
+
+
+
+
+function init() {
+  renderer = new THREE.WebGLRenderer({
+    antialias: true
+  });
+	renderer.setClearColor (0x888888);
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  document.body.appendChild(renderer.domElement);
+
+  scene = new THREE.Scene();
+  camera = new THREE.PerspectiveCamera(50, 1, 1, 10000);
+  camera.position.x=50;
+  camera.position.y=60;
+  camera.position.z = 150;
+
+	let controls = new THREE.OrbitControls (camera, renderer.domElement);
+   controls.minPolarAngle=THREE.Math.degToRad(50);
+   controls.maxPolarAngle=THREE.Math.degToRad(60);
+   controls.minDistance=100;
+ 	 controls.maxDistance=150;
+   
+   let floor = new THREE.Mesh(new THREE.PlaneGeometry(300,300),new THREE.MeshPhongMaterial());
+   floor.rotation.x=-Math.PI/2;
+   scene.add(floor);
+   
+   
+   candles[0]=new mycandle(0,0,0);
+  candles[1]=new mycandle(-40,40,1);
+  candles[2]=new mycandle(40,40,2);
+  candles[3]=new mycandle(40,-40,3);
+  candles[4]=new mycandle(-40,-40,4);
+  
+  ////////////////////////////////////////////////////////////
+  candles.forEach(function (a){ a.makeFlame2();})
+  
+  raycaster = new THREE.Raycaster();
+  mouse = new THREE.Vector2();
+  document.addEventListener ('pointerdown',pickevent,false);  
+
+  window.addEventListener('resize', onWindowResize, false);
+  
+}
+
+function onWindowResize() {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+}
+
+ 
+
+function animate() {
+  requestAnimationFrame(animate);
+  render();
+  // billboard
+  // candle.lookAt (camera.position)  // does not work
+  //console.log(candles[0].candle);
+  candles.forEach(function(a){a.flameMesh.lookAt(camera.position.x, 0, camera.position.z);});
+  
+}
+
+function render() {
+  renderer.render(scene, camera);
+}
+
+function pickevent(event){
+  event.preventDefault();
+  mouse.x = ( event.clientX / window.innerWidth ) * 2 - 1;
+  mouse.y = - ( event.clientY / window.innerHeight ) * 2 + 1;
+  raycaster.setFromCamera( mouse, camera );
+  var intersects = raycaster.intersectObjects(pickables);
+  
+  if (intersects.length > 0)
+  {
+     if(intersects[0].object.parent.n==0)
+     {
+      if(intersects[0].object.parent.children[1].visible){
+		  intersects[0].object.parent.children[1].visible = false;
+		  intersects[0].object.parent.children[2].visible = false;
+			candles[0].restart();
+			}
+      
+     }
+     else if(intersects[0].object.parent.n==1)
+     {
+      if(intersects[0].object.parent.children[1].visible){
+		  intersects[0].object.parent.children[1].visible = false;
+		  intersects[0].object.parent.children[2].visible = false;
+			candles[1].restart();
+			}
+     
+     }
+     else if(intersects[0].object.parent.n==2)
+     {
+      if(intersects[0].object.parent.children[1].visible){
+		  intersects[0].object.parent.children[1].visible = false;
+		  intersects[0].object.parent.children[2].visible = false;
+			candles[2].restart();
+			}
+      
+     }
+     else if(intersects[0].object.parent.n==3)
+     {
+      if(intersects[0].object.parent.children[1].visible){
+		  intersects[0].object.parent.children[1].visible = false;
+		  intersects[0].object.parent.children[2].visible = false;
+			candles[3].restart();
+			}
+      
+     }
+     else if(intersects[0].object.parent.n==4)
+     {
+      if(intersects[0].object.parent.children[1].visible){
+		  intersects[0].object.parent.children[1].visible = false;
+		  intersects[0].object.parent.children[2].visible = false;
+			candles[4].restart();
+			}
+      
+     }
+  }
+  else
+  {
+   console.log('nothing picked...');
+  }
+}
+
+
+</script>
+</body>
+</html>
