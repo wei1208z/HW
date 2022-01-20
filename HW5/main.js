@@ -76,11 +76,11 @@ function init(){
     });
 	
 	var count = 0;
-	for(var i = 100; i <= -100; i-=20){
-	  for(var j = -100; j >= -100; j+=20){
+	for(var i = 100; i >= -100; i-=20){
+	  for(var j = -100; j <= -100; j+=20){
 		var geometry = new TeapotGeometry (4);
         var mesh = new THREE.Mesh(geometry, meshMaterial);
-		mesh.position.set(j,0,i);
+		mesh.position.set(i,0,j);
 		teapots.push(mesh)
 		scene.add(mesh);
 	  }
