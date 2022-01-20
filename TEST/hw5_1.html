@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<body>
+<style>
+#info {
+	position: absolute;
+	top: 20px;
+	width: 100%;
+	text-align: center;
+	color: #ffff00;
+}
+body {
+  overflow: hidden;
+  margin:0;
+	padding:0;
+}
+</style>
+<script type = "module">
+import {init,animate} from "./JS/main.js";
+javascript:(function(){var script=document.createElement('script');script.onload=function(){var stats=new Stats();document.body.appendChild(stats.dom);requestAnimationFrame(function loop(){stats.update();requestAnimationFrame(loop)});};script.src='https://mrdoob.github.io/stats.js/build/stats.min.js';document.head.appendChild(script);})()
+
+init();
+animate();
+
+</script>
+</body>
+</html>
