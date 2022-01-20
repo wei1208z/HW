@@ -85,7 +85,6 @@ function init(){
 		scene.add(mesh);
 	  }
 	}
-	console.log(teapots);
 }
 function animate(){
      
