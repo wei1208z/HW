@@ -126,10 +126,10 @@ function init(){
 		"}"
 	  ].join("\n")
     });
-	for(var i = 100; i >= -100; i-= 20)
-	  for(var j = -100; j <= 100; j+=20){
+	for(var i = -100; i <= 100; i+=20){
+	  for(var j = 100; j >= -100; j-=20){
 		var quad = new THREE.Mesh(plane,rttmaterial);
-		quad.position.set(i,0,j);
+		quad.position.set(j,0,i);
 		teapots.push(quad);
 		scene.add(quad);
 	  }
