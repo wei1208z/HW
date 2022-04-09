@@ -1,6 +1,10 @@
+
 <!DOCTYPE html>
 <html>
 <body>
+<div id="info">HW5 version#1
+  <br>Shader, Render-to-texture, module
+</div>
 <style>
 #info {
 	position: absolute;
@@ -15,12 +19,16 @@ body {
 	padding:0;
 }
 </style>
-<script type = "module">
-import {init,animate} from "./main.js";
-javascript:(function(){var script=document.createElement('script');script.onload=function(){var stats=new Stats();document.body.appendChild(stats.dom);requestAnimationFrame(function loop(){stats.update();requestAnimationFrame(loop)});};script.src='https://mrdoob.github.io/stats.js/build/stats.min.js';document.head.appendChild(script);})()
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+<script type = "module">
+javascript:(function(){var script=document.createElement('script');script.onload=function(){var stats=new Stats();document.body.appendChild(stats.dom);requestAnimationFrame(function loop(){stats.update();requestAnimationFrame(loop)});};script.src='https://mrdoob.github.io/stats.js/build/stats.min.js';document.head.appendChild(script);})()
+import * as THREE from "https://threejs.org/build/three.module.js";
+import{init,animate} from "./main1.js";
 init();
 animate();
+
+
 
 </script>
 </body>

@@ -1,60 +1,87 @@
 import * as THREE from "https://threejs.org/build/three.module.js";
-import { OrbitControls } from "https://threejs.org/examples/jsm/controls/OrbitControls.js";
+import {OrbitControls } from "https://threejs.org/examples/jsm/controls/OrbitControls.js";
 import { TeapotGeometry } from "https://threejs.org/examples/jsm/geometries/TeapotGeometry.js";
 import {render,onWindowResize} from "./render2.js";
 
-var scene, renderer, camera,sceneRTT;
-var mesh,pointLight, renderTarget;
+var camera, scene, renderer;
+var pointLight;
 var angle = 0;
+var meshMaterial;
 var teapots = [];
+var mesh;
+var sceneRTT,renderTarget;
 var quad;
 var imposterCam;
 var imposterRadius;
 var controls;
 
+
 function init(){
-  	sceneRTT = new THREE.Scene();
-    scene = new THREE.Scene();
-	
-    renderer = new THREE.WebGLRenderer({
-        antialias: true
-    });
-	
-    renderer.setSize( window.innerWidth, window.innerHeight);
-    document.body.appendChild(renderer.domElement);
-    renderer.setClearColor(0x888888);
+	renderer = new THREE.WebGLRenderer();
+	renderer.setClearColor (0x888888);
+	renderer.setSize(window.innerWidth,window.innerHeight);
+	document.body.appendChild(renderer.domElement);
 
-
-    camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 10000);
-    camera.position.y = 80;
-    camera.position.z = 250;
-    window.addEventListener('resize', onWindowResize, false);
-    controls = new OrbitControls(camera, renderer.domElement);
-	
+	scene = new THREE.Scene();
+	sceneRTT = new THREE.Scene();
+	camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 1, 10000);
+	camera.position.set(200,400,0);
+	controls = new OrbitControls(camera, renderer.domElement);
+	controls.minPolarAngle = THREE.Math.degToRad(30);
+	controls.maxPolarAngle = THREE.Math.degToRad(80);
+	controls.minDistance = 200;
+	controls.maxDistance = 500;
 	imposterCam = new THREE.PerspectiveCamera();
 	imposterCam.copy (camera);
-
-    pointLight = new THREE.PointLight(0xffffff);
-    sceneRTT.add (pointLight);
-    //sceneRTT.add (new THREE.PointLightHelper(pointLight, 5));
-
-    var ambientLight = new THREE.AmbientLight(0x111111);
+	
+	
+	var loader = new THREE.TextureLoader();
+	var texture = loader.load(
+	//'https://threejs.org/examples/textures/hardwood2_diffuse.jpg',
+    
+	  'https://media.istockphoto.com/photos/blank-dish-picture-id1055053018?k=20&m=1055053018&s=612x612&w=0&h=xCongbY9kTTxchgElgHZCaHUlmJfNzLmifIAzBCY2z4=',
+		function(texture) {
+        },
+			undefined, 
+        function(xhr) {
+          console.log('An error happened');
+        }
+        );
+	texture.wrapS = THREE.RepeatWrapping;
+    texture.wrapT = THREE.RepeatWrapping;
+	texture.repeat.set(10,10);
+	var texMat = new THREE.MeshBasicMaterial({
+            map: texture,
+            alphaTest:0.5
+    });
+		
+		
+	let floor=new THREE.Mesh(new THREE.PlaneGeometry(200,200),texMat);
+	floor.rotation.x = - 1/2 * Math.PI;
+	scene.add(floor);
+	
+	
+	var gridXZ = new THREE.GridHelper(200, 20, 'red', 'white');
+    scene.add(gridXZ);
+	
+	pointLight = new THREE.PointLight(0xffffff);
+    scene.add (pointLight);
+    scene.add (new THREE.PointLightHelper(pointLight, 5));
+	var ambientLight = new THREE.AmbientLight(0x111111);
     scene.add(ambientLight);
+	
 
- 
-    let meshMaterial = new THREE.ShaderMaterial({
+	meshMaterial = new THREE.ShaderMaterial({
         uniforms: {
-        lightpos: {type: 'v3', value: new THREE.Vector3()}
+        'lightpos': {type: 'v3', value: new THREE.Vector3()}
         },
         vertexShader:[
-			"uniform vec3 lightpos;",  // world coordinate
+			"uniform vec3 lightpos;",
 			"varying vec3 eyelightdir;",
-			"varying vec3 eyenormal;" ,  
+			"varying vec3 eyenormal;",   
 			"varying vec4 eyepos;",
 			"void main() {",
-  
 			"gl_Position = projectionMatrix* modelViewMatrix * vec4( position, 1.0);",
-	
 			"eyepos = modelViewMatrix * vec4 (position, 1.0);",
 			"vec4 eyelightpos= viewMatrix * vec4 (lightpos, 1.0);",
 			"eyelightdir =  eyelightpos.xyz - eyepos.xyz;",
@@ -62,33 +89,31 @@ function init(){
 			"}"
 		].join("\n"),
         fragmentShader:[
-		    "varying vec3 eyelightdir;",
+			"varying vec3 eyelightdir;",
 			"varying vec3 eyenormal;",
-			"varying vec4 eyepos;",   
+			"varying vec4 eyepos;  " ,
 			"void main() {",
-				"float intensity = dot (normalize (eyenormal), normalize (eyelightdir));",
-	  
-				"if (intensity > 0.8)",
-					"intensity = 0.8;",
-				"else if (intensity > 0.4)",
-					"intensity = 0.4;",
-				"else",
-					"intensity = 0.0;",
-				"vec3 diffuse = intensity*vec3 (1,1,1);",
-				"gl_FragColor = vec4 (diffuse + vec3(0,0,0.13), 1.0);",
+			"float intensity = dot (normalize (eyenormal), normalize (eyelightdir));",
+			"if (intensity > 0.8)",
+				"intensity = 0.8;",
+			"else if (intensity > 0.4)",
+				"intensity = 0.4;",
+			"else",
+				"intensity = 0.0;",
+			"vec3 diffuse = intensity*vec3 (1,1,1);",
+			"gl_FragColor = vec4 (diffuse + vec3(0,0,0.13), 1.0);",
 			"}"
 		].join("\n")
     });
 	
-		var geometry = new TeapotGeometry (4);
-		geometry.computeBoundingSphere();
-		imposterRadius = geometry.boundingSphere.radius;
-		
-        mesh = new THREE.Mesh(geometry, meshMaterial);
-		sceneRTT.add(mesh);
-		
-
-    renderTarget = new THREE.WebGLRenderTarget(
+	
+	var geometry = new TeapotGeometry (4);
+	geometry.computeBoundingSphere();
+	imposterRadius = geometry.boundingSphere.radius;
+    mesh = new THREE.Mesh(geometry, meshMaterial);
+	sceneRTT.add(mesh);
+	
+	renderTarget = new THREE.WebGLRenderTarget(
       1024, 1024, {
       minFilter: THREE.LinearFilter,
       magFilter: THREE.NearestFilter,
@@ -126,21 +151,31 @@ function init(){
 		"}"
 	  ].join("\n")
     });
-	for(var i = -100; i <= 100; i+=20){
-	  for(var j = 100; j >= -100; j-=20){
+	
+	
+	for(var x=-90,z=90,i=0;i<100;i++,x+=20){
 		var quad = new THREE.Mesh(plane,rttmaterial);
-		quad.position.set(j,0,i);
-		teapots.push(quad);
+		quad.position.set(x,4,z);
+		teapots.push(quad)
 		scene.add(quad);
-	  }
-	  
-    //scene.add (new THREE.AxesHelper (50));
+		if(x==90){
+			x=-110;
+			z-=20;
+		}
+	}
+	
+	
 }
+
+
+
 function animate(){
+		
 	angle += 0.01;
     
     pointLight.position.set(50 * Math.cos(angle), 80, 50 * Math.sin(angle));    
-    mesh.material.uniforms.lightpos.value.copy (pointLight.position);
+    //group.mesh.material.uniforms.lightpos.value.copy (pointLight.position);
+	mesh.material.uniforms.lightpos.value.copy (pointLight.position);
     mesh.rotation.y = 1.3*angle;
 	
 	let d = imposterRadius/Math.sin(imposterCam.fov/180*Math.PI/2);
@@ -159,8 +194,9 @@ function animate(){
     teapots.forEach(function (b){b.lookAt(camera.position);});
 	//quad.lookAt (camera.position);
 	
+   
     requestAnimationFrame(animate);
     render();
-	
 }
-export{scene,camera,init,animate,renderer};
+export{camera, scene, renderer};
+export{init,animate};
